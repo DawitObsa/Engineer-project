@@ -1,0 +1,44 @@
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    volumes:
+      - icpcas-mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      MONGODB_URI: mongodb://mongo:27017/icpcas
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET before starting}
+      INITIAL_ADMIN_SETUP_TOKEN: ${INITIAL_ADMIN_SETUP_TOKEN:?Set INITIAL_ADMIN_SETUP_TOKEN before starting}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      FILE_STORAGE_PATH: /var/lib/icpcas/private-files
+    volumes:
+      - icpcas-files:/var/lib/icpcas/private-files
+    ports:
+      - "4000:4000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+  web:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api/v1}
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api/v1}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+volumes:
+  icpcas-mongo:
+  icpcas-files:

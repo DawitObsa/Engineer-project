@@ -1,0 +1,10 @@
+node_modules/
+.next/
+backend/node_modules/
+backend/dist/
+backend/.env
+.env.local
+coverage/
+playwright-report/
+test-results/
+work/
